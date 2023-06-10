@@ -15,33 +15,36 @@ def remove_seen(seen, l):
 def rec_each_song(playlst_id, song_id, songs_len):
     # 전역변수 : sim_df, train, val, best300, train_songs
     seen_song = val[val['id'] == playlst_id]['songs'].values[0]
-    if songs_len != 0:
-        n = 100//songs_len + 20 # 23
-        # song_id가 sim_df에 있는 경우
+    # songs_len이 0이 아닌 경우
+    if songs_len != 0: 
+        n = 100//songs_len + 20 # 23       
         rec_lst = []
+        # song_id가 sim_df에 있는 경우
         if song_id in sim_df.columns:
             series = sim_df[song_id].sort_values(ascending=False)
             series = series.drop(song_id)
             rec_lst = series.head(n).to_frame().index.tolist()
-            return remove_seen(seen_song, rec_lst)
-        
+            return remove_seen(seen_song, rec_lst)      
         # song_id가 sim_df에 없는 경우
         else:
-            if songs_len!=0:
-                # song_id가 있는 플리 id 찾기
+            if song_id in train_songs.values.tolist(): # song_id가 train에 있는 경우
                 playlst_ids = train_songs[train_songs==song_id].index.tolist()
                 dict_like = {}
                 for i in playlst_ids:
                     dict_like[train.loc[i]['id']] = train.loc[i]['like_cnt']
                 rec_lst = train[train['id'] == sorted(dict_like.items(), key=lambda x: x[1], reverse=True)[0][0]]['songs'].values[0] 
-                if len(rec_lst) >= n:
-                    rec_list = rec_lst[:n]
+                if len(rec_lst) >= n: 
+                    rec_list = rec_lst[:n] # rec_list : rec_lst에서 n개만큼 추출
                     return remove_seen(seen_song, rec_list) 
                 else:
-                    lst = remove_seen(rec_lst, best300) # lst : best300에서 rec_lst를 제외한 리스트
-                    rec_lst += lst[:n-len(rec_lst)] # rec_lst : rec_lst + lst에서 n-len(rec_lst)만큼 추출
+                    lst = remove_seen(rec_lst, best300) # best300에서 rec_lst를 제외한 리스트
+                    rec_lst += lst[:n-len(rec_lst)] # rec_lst + lst에서 n-len(rec_lst)만큼 추출한 리스트 (총n개)
                     return remove_seen(seen_song, rec_lst) # rec_lst에서 seen_song을 제외한 리스트
-    else:
+            else: # song_id가 train에 없는 경우
+                rec_lst = best300
+                return remove_seen(seen_song, rec_lst)[:100]
+    # songs_len이 0인 경우
+    else: 
         rec_lst = best300
         return remove_seen(seen_song, rec_lst)[:100]
 
